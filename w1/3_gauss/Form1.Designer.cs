@@ -70,6 +70,7 @@
             // 
             // solveButton
             // 
+            this.solveButton.Enabled = false;
             this.solveButton.Location = new System.Drawing.Point(319, 12);
             this.solveButton.Name = "solveButton";
             this.solveButton.Size = new System.Drawing.Size(133, 28);
@@ -77,6 +78,7 @@
             this.solveButton.Text = "Solve";
             this.solveButton.UseVisualStyleBackColor = true;
             this.solveButton.Visible = false;
+            this.solveButton.Click += new System.EventHandler(this.solveButton_Click);
             // 
             // openFileDialog1
             // 
