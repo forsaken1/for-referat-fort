@@ -20,7 +20,7 @@ namespace task
             InitializeComponent();
         }
 
-        private void SLAEButton_Click(object sender, EventArgs e)
+        private void Activate()
         {
             openFileButton.Visible = true;
             solveButton.Visible = true;
@@ -28,17 +28,17 @@ namespace task
             result.Visible = true;
             SLAEButton.Visible = false;
             IntegralButton.Visible = false;
+        }
+
+        private void SLAEButton_Click(object sender, EventArgs e)
+        {
+            Activate();
             mode = true;
         }
 
         private void IntegralButton_Click(object sender, EventArgs e)
         {
-            openFileButton.Visible = true;
-            solveButton.Visible = true;
-            monitor.Visible = true;
-            result.Visible = true;
-            SLAEButton.Visible = false;
-            IntegralButton.Visible = false;
+            Activate();
             mode = false;
         }
 
@@ -127,8 +127,6 @@ namespace task
             }
         }
 
-        
-
         public override void Write()
         {
 
@@ -196,8 +194,10 @@ namespace task
         {
             Solve();
             string str = "";
+
             for (int i = 0; i < n; i++)
                 str += "x" + (i + 1) + " = " + X[i] + "; ";
+
             res.Clear();
             res.AppendText(str);
         }
