@@ -20,7 +20,7 @@ namespace task
             InitializeComponent();
         }
 
-        private void Activate()
+        private void ActivateButtons()
         {
             openFileButton.Visible = true;
             solveButton.Visible = true;
@@ -32,13 +32,13 @@ namespace task
 
         private void SLAEButton_Click(object sender, EventArgs e)
         {
-            Activate();
+            ActivateButtons();
             mode = true;
         }
 
         private void IntegralButton_Click(object sender, EventArgs e)
         {
-            Activate();
+            ActivateButtons();
             mode = false;
         }
 
@@ -53,7 +53,7 @@ namespace task
                     if (mode)
                         sample = new SLAE(sr, monitor, result);
                     else
-                        sample = new Integral(sr, monitor);
+                        sample = new Integral(sr, monitor, result);
                 }
             }
         }
@@ -127,9 +127,12 @@ namespace task
             }
         }
 
-        public override void Write()
+        public void Write(string str)
         {
-
+            using (StreamWriter sw = new StreamWriter(File.Open("output.txt", FileMode.Create)))
+            {
+                sw.Write(str);
+            }
         }
 
         public override void Solve()
@@ -190,6 +193,7 @@ namespace task
                 x[i] = 1.0 * (b[i] - s) / a[i, i];
             }
         }
+
         public override void ShowData()
         {
             Solve();
@@ -200,44 +204,229 @@ namespace task
 
             res.Clear();
             res.AppendText(str);
+            Write(str);
+        }
+    }
+
+    public class Result
+    {
+        public double acc;
+        public string rest;
+
+        public Result(double v, string r)
+        {
+            this.acc = v;
+            this.rest = r;
+        }
+    }
+
+    public class Parser
+    {
+        private Dictionary<string, double> variables;
+
+        public Parser()
+        {
+            variables = new Dictionary<string, double>();
+        }
+
+        public void SetVariable(string variableName, double variableValue)
+        {
+            variables.Add(variableName, variableValue);
+        }
+
+        public double GetVariable(string variableName)
+        {
+            if (!variables.ContainsKey(variableName))
+            {
+                return 0.0;
+            }
+            double value;
+            variables.TryGetValue(variableName, out value);
+            return value;
+        }
+
+        public double Parse(string s)
+        {
+            Result result = PlusMinus(s);
+            return result.acc;
+        }
+
+        private Result PlusMinus(string s)
+        {
+            Result current = MulDiv(s);
+            double acc = current.acc;
+
+            while (current.rest.Length > 0)
+            {
+                if (!(current.rest[0] == '+' || current.rest[0] == '-')) break;
+
+                char sign = current.rest[0];
+                string next = current.rest.Substring(1);
+
+                current = MulDiv(next);
+                if (sign == '+')
+                {
+                    acc += current.acc;
+                }
+                else
+                {
+                    acc -= current.acc;
+                }
+            }
+            return new Result(acc, current.rest);
+        }
+
+        private Result Bracket(string s)
+        {
+            char zeroChar = s[0];
+            if (zeroChar == '(')
+            {
+                Result r = PlusMinus(s.Substring(1));
+                if (!(r.rest.Length > 0) && r.rest[0] == ')')
+                    r.rest = r.rest.Substring(1);
+
+                return r;
+            }
+            return FunctionVariable(s);
+        }
+
+        private Result FunctionVariable(String s)
+        {
+            String f = "";
+            int i = 0;
+            while (i < s.Length && (char.IsLetter(s[i]) || (char.IsDigit(s[i]) && i > 0)))
+            {
+                f += s[i];
+                i++;
+            }
+            if (f.Length > 0)
+            {
+                if (s.Length > i && s[i] == '(')
+                {
+                    Result r = Bracket(s.Substring(f.Length));
+                    return processFunction(f, r);
+                }
+                else
+                {
+                    return new Result(GetVariable(f), s.Substring(f.Length));
+                }
+            }
+            return Num(s);
+        }
+
+        private Result MulDiv(String s)
+        {
+            Result current = Bracket(s);
+
+            double acc = current.acc;
+            while (true)
+            {
+                if (current.rest.Length == 0)
+                    return current;
+
+                char sign = current.rest[0];
+                if ((sign != '*' && sign != '/'))
+                    return current;
+
+                string next = current.rest.Substring(1);
+                Result right = Bracket(next);
+
+                if (sign == '*')
+                    acc *= right.acc;
+                else
+                    acc /= right.acc;
+
+                current = new Result(acc, right.rest);
+            }
+        }
+
+        private Result Num(string s)
+        {
+            int i = 0;
+            bool negative = false;
+            if (s[0] == '-')
+            {
+                negative = true;
+                s = s.Substring(1);
+            }
+            while (i < s.Length && (char.IsDigit(s[i]) || s[i] == '.'))
+            {
+                i++;
+            }
+
+            double dPart = double.Parse(s.Substring(0, i));
+            if (negative) dPart = -dPart;
+            string restPart = s.Substring(i);
+
+            return new Result(dPart, restPart);
+        }
+
+        private Result processFunction(String func, Result r)
+        {
+            if (func == "sin")
+                return new Result(Math.Sin(r.acc / 180 * Math.PI), r.rest);
+            else
+                if (func == "cos")
+                    return new Result(Math.Cos(r.acc / 180 * Math.PI), r.rest);
+                else
+                    if (func == "tan")
+                        return new Result(Math.Tan(r.acc / 180 * Math.PI), r.rest);
+            return r;
         }
     }
 
     public class Integral : Task
     {
-        private string str;
-        private int a, b;
-        private StreamReader sr; 
-        private RichTextBox mon;
+        private string exp, strResult;
+        private double a, b;
+        private StreamReader sr;
+        private RichTextBox mon, res;
 
-        public Integral(StreamReader _sr, RichTextBox _mon)
+        public Integral(StreamReader _sr, RichTextBox _mon, RichTextBox _res)
         {
             sr = _sr;
+            res = _res;
             mon = _mon;
             Read();
         }
 
         public override void Read()
         {
-            str = sr.ReadLine();
-            str.Split(' ');
-
+            string str = sr.ReadLine();
+            string[] s = str.Split(' ');
+            a = double.Parse(s[0]);
+            b = double.Parse(s[1]);
+            exp = s[2];
             mon.AppendText(str);
         }
 
         public override void Write()
         {
-
+            using (StreamWriter sw = new StreamWriter(File.Open("output.txt", FileMode.Create)))
+            {
+                sw.Write(strResult);
+            }
         }
 
         public override void Solve()
         {
+            Parser parser = new Parser();
+            parser.SetVariable("x", a);
+            double d1 = parser.Parse(exp);
 
+            parser = new Parser();
+            parser.SetVariable("x", b);
+            double d2 = parser.Parse(exp);
+
+            strResult = "Integral = " + (d1 + d2) / 2 * (b - a); 
         }
 
         public override void ShowData()
         {
-
+            Solve();
+            res.Clear();
+            res.AppendText("" + strResult);
+            Write();
         }
     }
 }
