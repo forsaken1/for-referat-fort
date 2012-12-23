@@ -22,16 +22,16 @@ namespace WindowsFormsApplication1
         public Form1()
         {
             InitializeComponent();
-            comboBox1.SelectedIndex = 2;
+            comboBox1.SelectedIndex = 2;  //Значение комбобокса по умолчанию
             path = new ArrayList();
         }
 
-        private void DrawLabyrinth(string[] _map) {
-            int size = pictureBox1.Height / n;
+        private void DrawLabyrinth(string[] _map) {  //нарисовать лабиринт используя матрицу map
+            int size = pictureBox1.Height / n; 
             Graphics g = pictureBox1.CreateGraphics();
             Brush brush = Brushes.White;
 
-            g.FillRectangle(brush, new Rectangle(new Point(0, 0), new Size(pictureBox1.Width, pictureBox1.Height)));
+            g.FillRectangle(brush, new Rectangle(new Point(0, 0), new Size(pictureBox1.Width, pictureBox1.Height))); //очистка
 
             for (int i = 0; i < n; i++)
                 for (int j = 0; j < _map[i].Length; j++)
@@ -49,7 +49,7 @@ namespace WindowsFormsApplication1
                 }
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void button1_Click(object sender, EventArgs e) //обработчик кнопки Open File
         {
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -60,27 +60,27 @@ namespace WindowsFormsApplication1
                 using (StreamReader sr = new StreamReader(File.Open(openFileDialog1.FileName, FileMode.Open)))
                 {
                     while (!sr.EndOfStream)
-                       map[n++] = sr.ReadLine();
+                       map[n++] = sr.ReadLine(); //заполнение матрицы map
                 }
                 for (int i = 0; i < n; i++)
-                    origin[i] = map[i];
+                    origin[i] = map[i]; //резервная копия матрицы map
 
                 DrawLabyrinth(origin);
                 button2.Enabled = true;
             }
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void button2_Click(object sender, EventArgs e) //обработчик кнопки Generate path
         {
             for (int i = 0; i < n; i++)
-                map[i] = origin[i];
+                map[i] = origin[i]; //загрузка оригинальной матрицы без путей
 
-            Point p = GoToCrossroad(comboBox1.SelectedIndex, input.X, input.Y);
+            Point p = GoToCrossroad(comboBox1.SelectedIndex, input.X, input.Y); //рекурсивный алгоритм поиска пути
             for (int i = 0; i < path.Count; i++)
             {
-                MarkStep(((Point)path[i]).X, ((Point)path[i]).Y);
+                MarkStep(((Point)path[i]).X, ((Point)path[i]).Y); //т.к. path хранит искомый алгоритм, то мы должны отметить его на нашей матрице
             }
-            path.Clear();
+            path.Clear(); //удаляем путь
 
             if (p.X >= INF)
                 MessageBox.Show("No path");
@@ -105,7 +105,7 @@ namespace WindowsFormsApplication1
             return map[i][j] == '.';
         }
 
-        private bool Impasse(int i, int j)
+        private bool Impasse(int i, int j) //проверка на тупик
         {
             if (IsWall(i + 1, j) || IsPath(i + 1, j))
                 if (IsWall(i - 1, j) || IsPath(i - 1, j))
@@ -115,7 +115,7 @@ namespace WindowsFormsApplication1
             return false;
         }
 
-        private bool Crossroad(int i, int j)
+        private bool Crossroad(int i, int j) //проверка на перекресток. в этой версии программы я реализовал перекрестки с двумя разветвлениями (не считая путь, с которого мы прибыли)
         {
             int pathCount = 0;
             int[,] a = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
@@ -141,7 +141,7 @@ namespace WindowsFormsApplication1
                 return false;
         }
 
-        private void MarkStep(int i, int j)
+        private void MarkStep(int i, int j) //С# не разрешает прямое изменение массива строк, поэтому нельзя было написать просто map[i][j] = '.'
         {
             char[] str = map[i].ToCharArray();
             str[j] = '.';
@@ -155,30 +155,30 @@ namespace WindowsFormsApplication1
             map[i] = new string(str);
         }
 
-        private Point GoToCrossroad(int mode, int i, int j)
+        private Point GoToCrossroad(int mode, int i, int j) //рекурсивный алгоритм поиска, возвращает длину пути и количество бонусов в структуре Point(X, Y)
         {
-            if (Finish(i, j))
+            if (Finish(i, j)) //если финиш - возвращаем нули
                 return new Point(0, 0);
 
-            int score = map[i][j] - '0';
-            if (score > 9 || score < 0)
+            int score = map[i][j] - '0'; //запоминаем бонус текущего шага
+            if (score > 9 || score < 0) 
                 score = 0;
 
-            if (Impasse(i, j))
+            if (Impasse(i, j)) //если тупик - возвращаем бесконечность шагов и, в зависимости от условия получения баллов, ноль или бесконечность баллов
                 return new Point(INF, (mode == 1 || mode == 4) ? 0 : INF);
 
             MarkStep(i, j);
-            path.Add(new Point(i, j));
+            path.Add(new Point(i, j)); //кидаем текущий шаг в список шагов искомого пути
 
-            if (Crossroad(i, j))
+            if (Crossroad(i, j)) //если перекресток - разветвляемся..
             {
                 Point _second = new Point(second.X, second.Y);
 
                 int from = path.Count;
-                Point f = GoToCrossroad(mode, first.X, first.Y);
+                Point f = GoToCrossroad(mode, first.X, first.Y); //идем "направо"
                 int to = path.Count;
 
-                ArrayList p = new ArrayList();
+                ArrayList p = new ArrayList(); //запоминаем путь из "правого" пути в отдельный список и удаляем его из основного списка 
                 for (int k = to - 1; k >= from; k--)
                 {
                     p.Add(path[k]);
@@ -186,11 +186,11 @@ namespace WindowsFormsApplication1
                 }
 
                 int _from = path.Count;
-                Point _f = GoToCrossroad(mode, _second.X, _second.Y);
+                Point _f = GoToCrossroad(mode, _second.X, _second.Y); //идем "налево"
                 int _to = path.Count;
 
                 bool b = false;
-                switch (mode)
+                switch (mode) //в зависимости от условия возвращаем разные пути
                 {
                     case 0:
                         if (f.Y > _f.Y && _f.X < INF || f.X >= INF)
@@ -216,12 +216,12 @@ namespace WindowsFormsApplication1
                 }
                 if (b)
                 {
-                    UnMarkStep(i, j);
+                    UnMarkStep(i, j); //удаляем точку (разотмечаем путь), чтобы новые пути в других рекурсивных проходах не попали в "тупик"
                     return new Point(1 + _f.X, score + _f.Y);
                 }
                 else
                 {
-                    ArrayList _p = new ArrayList();
+                    ArrayList _p = new ArrayList(); //если нам надо вернуть не "левый" а "правый" путь, то удаляем из основного списка "левый" путь и копируем туда "правый"
                     for (int k = _to - 1; k >= _from; k--)
                     {
                         _p.Add(path[k]);
@@ -234,7 +234,7 @@ namespace WindowsFormsApplication1
                     return new Point(1 + f.X, score + f.Y);
                 }
             }
-            else
+            else //если нет перекрестка, а просто один вариант хода - то просто идем туда =)
             {
                 Point d = GoToCrossroad(mode, first.X, first.Y);
                 UnMarkStep(i, j);

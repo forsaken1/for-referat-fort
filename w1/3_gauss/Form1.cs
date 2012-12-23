@@ -20,7 +20,7 @@ namespace task
             InitializeComponent();
         }
 
-        private void ActivateButtons()
+        private void ActivateButtons() //при выборе "Интергал или СЛАУ" активируем основной интерфейс и убираем кнопки выбора
         {
             openFileButton.Visible = true;
             solveButton.Visible = true;
@@ -30,19 +30,19 @@ namespace task
             IntegralButton.Visible = false;
         }
 
-        private void SLAEButton_Click(object sender, EventArgs e)
+        private void SLAEButton_Click(object sender, EventArgs e) //кнопка выбора СЛАУ
         {
             ActivateButtons();
             mode = true;
         }
 
-        private void IntegralButton_Click(object sender, EventArgs e)
+        private void IntegralButton_Click(object sender, EventArgs e) //кнопка выбора интеграла
         {
             ActivateButtons();
             mode = false;
         }
 
-        private void openFileButton_Click(object sender, EventArgs e)
+        private void openFileButton_Click(object sender, EventArgs e) //обработчик кнопки Open File
         {
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -58,13 +58,13 @@ namespace task
             }
         }
 
-        private void solveButton_Click(object sender, EventArgs e)
+        private void solveButton_Click(object sender, EventArgs e) //обработчик кнопки Solve
         {
             sample.ShowData();
         }
     }
 
-    public class Task
+    public class Task //в общем-то бесполезный класс, но по ТЗ необходим =)
     {
         public virtual void Read() { }
         public virtual void Write() { }
@@ -72,7 +72,7 @@ namespace task
         public virtual void ShowData() { }
     }
 
-    public class SLAE : Task
+    public class SLAE : Task //класс для решения СЛАУ
     {
         private double[,] A;
         private double[] B, X;
@@ -80,7 +80,7 @@ namespace task
         private StreamReader sr;
         private RichTextBox mon, res;
 
-        public SLAE(StreamReader _sr, RichTextBox _mon, RichTextBox _res)
+        public SLAE(StreamReader _sr, RichTextBox _mon, RichTextBox _res) //в конструктор загружаем сразу и поля вывода и входной поток с файла
         {
             sr = _sr;
             mon = _mon;
@@ -88,7 +88,7 @@ namespace task
             Read();
         }
 
-        public override void Read()
+        public override void Read() //считываем построчно и парсим в матрицы А и В все наши значения с файла
         {
             string[] str = new string[100];
             n = 0;
@@ -96,7 +96,7 @@ namespace task
             B = new double[100];
 
             while (!sr.EndOfStream)
-                str[n++] = sr.ReadLine();
+                str[n++] = sr.ReadLine(); 
 
             m = str[0].Length - 1;
 
@@ -104,7 +104,7 @@ namespace task
 
             for (int i = 0; i < n; i++)
             {
-                string[] s = str[i].Split(' ');
+                string[] s = str[i].Split(' '); 
                 string st = "";
 
                 for (int j = 0; j < s.Length; j++)
@@ -127,7 +127,7 @@ namespace task
             }
         }
 
-        public void Write(string str)
+        public void Write(string str) //вывод в файл
         {
             using (StreamWriter sw = new StreamWriter(File.Open("output.txt", FileMode.Create)))
             {
@@ -135,7 +135,7 @@ namespace task
             }
         }
 
-        public override void Solve()
+        public override void Solve() //в векторе Х - ответ
         {
             X = new double[100];
             Gauss(A, B, X);
@@ -143,7 +143,7 @@ namespace task
 
         double fabs(double d) { return d < 0 ? -d : d; }
 
-        void Gauss(double[,] a, double[] b, double[] x)
+        void Gauss(double[,] a, double[] b, double[] x) //само решение в прямой и обратный проход, много элементарных действий, думаю, вам не придется объяснять как работает этот алгоритм - его можно и просто найти в интернете
         {
             double v;
             for (int k = 0, i, j, im; k < n - 1; k++)
@@ -194,7 +194,7 @@ namespace task
             }
         }
 
-        public override void ShowData()
+        public override void ShowData() //выдать ответ в поле RichTextBox
         {
             Solve();
             string str = "";
@@ -207,7 +207,7 @@ namespace task
             Write(str);
         }
     }
-
+    //--------------------интерфейс парсера для интегральных функций (ограничение: считает любое выражение и функции sin, co, tg, остальное игнорирует--------
     public class Result
     {
         public double acc;
@@ -374,11 +374,12 @@ namespace task
             return r;
         }
     }
+    //----------------------end 
 
-    public class Integral : Task
+    public class Integral : Task //класс, вычисляющий значение интеграла
     {
         private string exp, strResult;
-        private double a, b;
+        private double a, b; //пределы интегрирования
         private StreamReader sr;
         private RichTextBox mon, res;
 
@@ -390,7 +391,9 @@ namespace task
             Read();
         }
 
-        public override void Read()
+        public override void Read() //считали, распарсили. в файле должна быть такая схема: первые две цифры -
+                                    // нижний и верхний пределы интегрирования, далее подинтегральная функция без пробелов
+                                    //зависимая переменная всегда Х
         {
             string str = sr.ReadLine();
             string[] s = str.Split(' ');
@@ -400,7 +403,7 @@ namespace task
             mon.AppendText(str);
         }
 
-        public override void Write()
+        public override void Write() //запись в файл
         {
             using (StreamWriter sw = new StreamWriter(File.Open("output.txt", FileMode.Create)))
             {
@@ -408,7 +411,7 @@ namespace task
             }
         }
 
-        public override void Solve()
+        public override void Solve() //вычисление интеграла
         {
             Parser parser = new Parser();
             parser.SetVariable("x", a);
@@ -421,7 +424,7 @@ namespace task
             strResult = "Integral = " + (d1 + d2) / 2 * (b - a); 
         }
 
-        public override void ShowData()
+        public override void ShowData() //вывод в RichTextBox
         {
             Solve();
             res.Clear();
